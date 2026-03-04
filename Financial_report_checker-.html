@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Financial Report Checker | 中英文财报数字与翻译一致性校验</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            font-family: 'Inter', 'Microsoft YaHei', sans-serif;
+        }
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .card-shadow {
+            box-shadow: 0 10px 40px rgba(0,0,0,0.08);
+        }
+        .upload-area {
+            border: 2px dashed #cbd5e0;
+            transition: all 0.3s ease;
+        }
+        .upload-area:hover, .upload-area.dragover {
+            border-color: #667eea;
+            background-color: #f7fafc;
+        }
+        .result-card {
+            background: linear-gradient(145deg, #ffffff 0%, #f8fafc 100%);
+        }
+        .pulse {
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        .fade-in {
+            animation: fadeIn 0.5s ease-in;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .success-card {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+        }
+        .warning-card {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+        .error-card {
+            background: linear-gradient(135deg, #eb3349 0%, #f45c43 100%);
+        }
+        pre {
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <!-- Header -->
+    <header class="gradient-bg text-white py-12">
+        <div class="max-w-6xl mx-auto px-4">
+            <div class="text-center">
+                <h1 class="text-4xl md:text-5xl font-bold mb-4">Financial Report Checker</h1>
+                <p class="text-xl opacity-90">中英文财报数字与翻译一致性智能校验</p>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-6xl mx-auto px-4 py-12">
+        <!-- Upload Section -->
+        <div class="grid md:grid-cols-2 gap-8 mb-12">
+            <!-- Chinese Upload -->
+            <div class="bg-white rounded-2xl card-shadow p-8">
+                <div class="flex items-center mb-6">
+                    <div class="w-12 h-12 bg-red-100 rounded-xl flex items-center justify-center mr-4">
+                        <svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                        </svg>
+                    </div>
+                    <div>
+                        <h2 class="text-2xl font-bold text-gray-800">中文财报</h2>
+                        <p class="text-gray-500">上传或粘贴中文财报内容</p>
+                    </div>
+                </div>
+                
+                <div id="cnUploadArea" class="upload-area rounded-xl p-8 text-center cursor-pointer mb-4">
+                    <input type="file" id="cnFile" class="hidden" accept=".pdf,.docx,.xlsx,.txt,.md">
+                    <svg class="w-12 h-12 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                    </svg>
+                    <p class="text-gray-600 font-medium">点击或拖拽文件到此处</p>
+                    <p class="text-gray-400 text-sm mt-2">支持 PDF, DOCX, XLSX, TXT, MD</p>
+                </div>
+                
+                <div id="cnFileInfo" class="hidden mb-4 p-4 bg-green-50 border border-green-200 rounded-xl">
+                    <div class="flex items-center">
+                        <svg class="w-5 h-5 text-green-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                        </svg>
+                        <span id="cnFileName" class="text-green-800 font-medium"></span>
+                        <button onclick="clearCnFile()" class="ml-auto text-red-500 hover:text-red-700">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+                
+                <textarea id="cnText" class="w-full h-48 p-4 border border-gray-200 rounded-xl resize-none focus:ring-2 focus:ring-purple-500 focus:border-transparent" placeholder="或直接粘贴中文财报内容..."></textarea>
+            </div>
+
+            <!-- English Upload -->
+            <div class="bg-white rounded-2xl card-shadow p-8">
+                <div class="flex items-center mb-6">
+                    <div class="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center mr-4">
+                        <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                        </svg>
+                    </div>
+                    <div>
+                        <h2 class="text-2xl font-bold text-gray-800">English Report</h2>
+                        <p class="text-gray-500">Upload or paste English report</p>
+                    </div>
+                </div>
+                
+                <div id="enUploadArea" class="upload-area rounded-xl p-8 text-center cursor-pointer mb-4">
+                    <input type="file" id="enFile" class="hidden" accept=".pdf,.docx,.xlsx,.txt,.md">
+                    <svg class="w-12 h-12 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                    </svg>
+                    <p class="text-gray-600 font-medium">Click or drag file here</p>
+                    <p class="text-gray-400 text-sm mt-2">PDF, DOCX, XLSX, TXT, MD supported</p>
+                </div>
+                
+                <div id="enFileInfo" class="hidden mb-4 p-4 bg-green-50 border border-green-200 rounded-xl">
+                    <div class="flex items-center">
+                        <svg class="w-5 h-5 text-green-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                        </svg>
+                        <span id="enFileName" class="text-green-800 font-medium"></span>
+                        <button onclick="clearEnFile()" class="ml-auto text-red-500 hover:text-red-700">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+                
+                <textarea id="enText" class="w-full h-48 p-4 border border-gray-200 rounded-xl resize-none focus:ring-2 focus:ring-purple-500 focus:border-transparent" placeholder="Or paste English report content here..."></textarea>
+            </div>
+        </div>
+
+        <!-- Check Button -->
+        <div class="text-center mb-12">
+            <button id="checkBtn" onclick="checkFinancialReport()" class="gradient-bg text-white px-12 py-4 rounded-xl text-lg font-semibold hover:opacity-90 transition-all transform hover:scale-105 shadow-lg">
+                <span id="btnText">开始校验 / Start Check</span>
+            </button>
+        </div>
+
+        <!-- Results Section -->
+        <div id="resultArea" class="hidden fade-in">
+            <!-- Stats Cards -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8">
+                <div class="stat-card text-white rounded-2xl p-6 card-shadow">
+                    <div class="text-3xl font-bold mb-2" id="totalDigits">0</div>
+                    <div class="opacity-90">总数字数</div>
+                </div>
+                <div class="success-card text-white rounded-2xl p-6 card-shadow">
+                    <div class="text-3xl font-bold mb-2" id="consistentDigits">0</div>
+                    <div class="opacity-90">数字一致</div>
+                </div>
+                <div class="error-card text-white rounded-2xl p-6 card-shadow">
+                    <div class="text-3xl font-bold mb-2" id="inconsistentDigits">0</div>
+                    <div class="opacity-90">数字差异</div>
+                </div>
+                <div class="warning-card text-white rounded-2xl p-6 card-shadow">
+                    <div class="text-3xl font-bold mb-2" id="translationIssues">0</div>
+                    <div class="opacity-90">翻译问题</div>
+                </div>
+            </div>
+
+            <!-- Summary -->
+            <div class="bg-white rounded-2xl card-shadow p-8 mb-8">
+                <h3 class="text-xl font-bold text-gray-800 mb-4">整体结论 / Summary</h3>
+                <div id="summary" class="text-gray-600 text-lg leading-relaxed"></div>
+            </div>
+
+            <!-- Detailed Results -->
+            <div class="grid md:grid-cols-2 gap-8">
+                <!-- Digit Check -->
+                <div class="bg-white rounded-2xl card-shadow p-8">
+                    <h3 class="text-xl font-bold text-gray-800 mb-6">数字一致性校验 / Digit Check</h3>
+                    <div id="digitResults" class="space-y-4"></div>
+                </div>
+
+                <!-- Translation Check -->
+                <div class="bg-white rounded-2xl card-shadow p-8">
+                    <h3 class="text-xl font-bold text-gray-800 mb-6">翻译准确性验证 / Translation Check</h3>
+                    <div id="translationResults" class="space-y-4"></div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-gray-800 text-white py-8 mt-16">
+        <div class="max-w-6xl mx-auto px-4 text-center">
+            <p class="opacity-75">Powered by GPT-3.5 | 专业财报校验工具</p>
+        </div>
+    </footer>
+
+    <script>
+        // API Configuration
+        const API_KEY = "sk-z5fsEjoMB2XafHoXhmjuL4eyfUBDPSDXr9Ji7WxfOGdnyIVg";
+        const API_URL = "https://api-free.chatanywhere.tech/v1/chat/completions";
+
+        // File Upload Handlers
+        function setupUploadHandlers() {
+            const cnArea = document.getElementById('cnUploadArea');
+            const enArea = document.getElementById('enUploadArea');
+            const cnFile = document.getElementById('cnFile');
+            const enFile = document.getElementById('enFile');
+
+            // Chinese upload
+            cnArea.addEventListener('click', () => cnFile.click());
+            cnArea.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                cnArea.classList.add('dragover');
+            });
+            cnArea.addEventListener('dragleave', () => {
+                cnArea.classList.remove('dragover');
+            });
+            cnArea.addEventListener('drop', (e) => {
+                e.preventDefault();
+                cnArea.classList.remove('dragover');
+                if (e.dataTransfer.files.length) {
+                    handleFile(e.dataTransfer.files[0], 'cn');
+                }
+            });
+            cnFile.addEventListener('change', (e) => {
+                if (e.target.files.length) {
+                    handleFile(e.target.files[0], 'cn');
+                }
+            });
+
+            // English upload
+            enArea.addEventListener('click', () => enFile.click());
+            enArea.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                enArea.classList.add('dragover');
+            });
+            enArea.addEventListener('dragleave', () => {
+                enArea.classList.remove('dragover');
+            });
+            enArea.addEventListener('drop', (e) => {
+                e.preventDefault();
+                enArea.classList.remove('dragover');
+                if (e.dataTransfer.files.length) {
+                    handleFile(e.dataTransfer.files[0], 'en');
+                }
+            });
+            enFile.addEventListener('change', (e) => {
+                if (e.target.files.length) {
+                    handleFile(e.target.files[0], 'en');
+                }
+            });
+        }
+
+        function handleFile(file, lang) {
+            const fileInfo = document.getElementById(lang + 'FileInfo');
+            const fileName = document.getElementById(lang + 'FileName');
+            const textarea = document.getElementById(lang + 'Text');
+            const uploadArea = document.getElementById(lang + 'UploadArea');
+
+            fileName.textContent = file.name;
+            fileInfo.classList.remove('hidden');
+            uploadArea.style.display = 'none';
+
+            // Read text files
+            if (file.type === 'text/plain' || file.name.endsWith('.md') || file.name.endsWith('.txt')) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    textarea.value = e.target.result;
+                };
+                reader.readAsText(file);
+            } else {
+                textarea.placeholder = `已选择文件: ${file.name}\n\n提示：PDF/DOCX/XLSX文件需要后端解析，此处仅演示文件上传功能，请粘贴文本内容或使用TXT文件。`;
+            }
+        }
+
+        function clearCnFile() {
+            document.getElementById('cnFileInfo').classList.add('hidden');
+            document.getElementById('cnUploadArea').style.display = 'block';
+            document.getElementById('cnText').value = '';
+            document.getElementById('cnText').placeholder = '或直接粘贴中文财报内容...';
+            document.getElementById('cnFile').value = '';
+        }
+
+        function clearEnFile() {
+            document.getElementById('enFileInfo').classList.add('hidden');
+            document.getElementById('enUploadArea').style.display = 'block';
+            document.getElementById('enText').value = '';
+            document.getElementById('enText').placeholder = 'Or paste English report content here...';
+            document.getElementById('enFile').value = '';
+        }
+
+        async function checkFinancialReport() {
+            const cnText = document.getElementById('cnText').value.trim();
+            const enText = document.getElementById('enText').value.trim();
+            const checkBtn = document.getElementById('checkBtn');
+            const btnText = document.getElementById('btnText');
+            const resultArea = document.getElementById('resultArea');
+
+            if (!cnText || !enText) {
+                alert('请输入或上传中英文财报内容！\nPlease input or upload both Chinese and English reports!');
+                return;
+            }
+
+            // Show loading
+            checkBtn.disabled = true;
+            btnText.innerHTML = '<span class="pulse">校验中... / Checking...</span>';
+            resultArea.classList.add('hidden');
+
+            try {
+                const prompt = `You are a professional financial audit expert. Please carefully compare the following Chinese and English financial reports and complete two tasks:
+
+1. Digit Consistency Check: Check if all key figures (amounts, percentages, growth rates, dates, etc.) are consistent, paying attention to currency unit conversions (e.g., 亿 → billion/million)
+2. Translation Accuracy Verification: Check if the translation of financial professional terms complies with industry standards
+
+Chinese Report:
+${cnText}
+
+English Report:
+${enText}
+
+Please return the result strictly in the following JSON format (do not include any other text):
+{
+    "summary": "Overall conclusion in both Chinese and English",
+    "digitCheck": {
+        "total": total number of digits,
+        "consistent": consistent count,
+        "inconsistent": inconsistent count,
+        "details": [
+            {
+                "cnDigit": "Chinese digit",
+                "enDigit": "English digit",
+                "status": "consistent/inconsistent",
+                "description": "Description in both Chinese and English"
+            }
+        ]
+    },
+    "translationCheck": {
+        "total": total terms,
+        "correct": correct count,
+        "incorrect": incorrect count,
+        "details": [
+            {
+                "cnTerm": "Chinese term",
+                "enTerm": "English term",
+                "status": "correct/incorrect",
+                "suggestion": "Correction suggestion if incorrect",
+                "description": "Description in both Chinese and English"
+            }
+        ]
+    }
+}`;
+
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${API_KEY}`
+                    },
+                    body: JSON.stringify({
+                        model: 'gpt-3.5-turbo',
+                        messages: [
+                            {
+                                role: 'system',
+                                content: 'You are a professional financial audit expert specializing in comparing and verifying Chinese and English financial reports.'
+                            },
+                            {
+                                role: 'user',
+                                content: prompt
+                            }
+                        ],
+                        temperature: 0.3,
+                        max_tokens: 3000
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`API request failed: ${response.status}`);
+                }
+
+                const data = await response.json();
+                const aiResponse = data.choices[0].message.content;
+                
+                let result;
+                try {
+                    const jsonMatch = aiResponse.match(/\{[\s\S]*\}/);
+                    result = jsonMatch ? JSON.parse(jsonMatch[0]) : JSON.parse(aiResponse);
+                } catch (e) {
+                    document.getElementById('summary').innerHTML = aiResponse.replace(/\n/g, '<br>');
+                    resultArea.classList.remove('hidden');
+                    return;
+                }
+
+                renderResult(result);
+
+            } catch (error) {
+                console.error('Error:', error);
+                alert(`校验出错：${error.message}\n请检查API Key是否有效或网络连接是否正常。`);
+            } finally {
+                checkBtn.disabled = false;
+                btnText.textContent = '开始校验 / Start Check';
+            }
+        }
+
+        function renderResult(result) {
+            const resultArea = document.getElementById('resultArea');
+            
+            // Update stats
+            document.getElementById('totalDigits').textContent = result.digitCheck?.total || 0;
+            document.getElementById('consistentDigits').textContent = result.digitCheck?.consistent || 0;
+            document.getElementById('inconsistentDigits').textContent = result.digitCheck?.inconsistent || 0;
+            document.getElementById('translationIssues').textContent = result.translationCheck?.incorrect || 0;
+            
+            // Update summary
+            document.getElementById('summary').textContent = result.summary || '校验完成 / Check completed';
+            
+            // Render digit results
+            const digitResults = document.getElementById('digitResults');
+            if (result.digitCheck?.details) {
+                digitResults.innerHTML = result.digitCheck.details.map((item, index) => `
+                    <div class="p-4 rounded-xl ${item.status === 'inconsistent' ? 'bg-red-50 border border-red-200' : 'bg-green-50 border border-green-200'}">
+                        <div class="flex items-center mb-2">
+                            <span class="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-sm mr-3 ${item.status === 'inconsistent' ? 'bg-red-500' : 'bg-green-500'}">
+                                ${index + 1}
+                            </span>
+                            <span class="font-semibold ${item.status === 'inconsistent' ? 'text-red-800' : 'text-green-800'}">
+                                ${item.status === 'inconsistent' ? '⚠️ 不一致 / Inconsistent' : '✅ 一致 / Consistent'}
+                            </span>
+                        </div>
+                        <div class="ml-11 space-y-1 text-sm">
+                            <div><span class="text-gray-500">中文:</span> <span class="font-medium">${item.cnDigit}</span></div>
+                            <div><span class="text-gray-500">English:</span> <span class="font-medium">${item.enDigit}</span></div>
+                            <div class="text-gray-600 mt-2">${item.description}</div>
+                        </div>
+                    </div>
+                `).join('');
+            }
+            
+            // Render translation results
+            const translationResults = document.getElementById('translationResults');
+            if (result.translationCheck?.details) {
+                translationResults.innerHTML = result.translationCheck.details.map((item, index) => `
+                    <div class="p-4 rounded-xl ${item.status === 'incorrect' ? 'bg-yellow-50 border border-yellow-200' : 'bg-green-50 border border-green-200'}">
+                        <div class="flex items-center mb-2">
+                            <span class="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-sm mr-3 ${item.status === 'incorrect' ? 'bg-yellow-500' : 'bg-green-500'}">
+                                ${index + 1}
+                            </span>
+                            <span class="font-semibold ${item.status === 'incorrect' ? 'text-yellow-800' : 'text-green-800'}">
+                                ${item.status === 'incorrect' ? '⚠️ 需修正 / Needs Correction' : '✅ 正确 / Correct'}
+                            </span>
+                        </div>
+                        <div class="ml-11 space-y-1 text-sm">
+                            <div><span class="text-gray-500">中文术语:</span> <span class="font-medium">${item.cnTerm}</span></div>
+                            <div><span class="text-gray-500">English:</span> <span class="font-medium">${item.enTerm}</span></div>
+                            <div class="text-gray-600 mt-2">${item.description}</div>
+                            ${item.suggestion ? `
+                                <div class="mt-2 p-2 bg-white rounded-lg border">
+                                    <span class="text-purple-600 font-medium">修正建议 / Suggestion:</span> 
+                                    <span class="ml-2">${item.suggestion}</span>
+                                </div>
+                            ` : ''}
+                        </div>
+                    </div>
+                `).join('');
+            }
+            
+            resultArea.classList.remove('hidden');
+            resultArea.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // Initialize
+        setupUploadHandlers();
+    </script>
+</body>
+</html>
