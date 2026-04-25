@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Financial Report Checker | 中英文财报数字与翻译一致性校验</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
         * {
@@ -197,6 +198,25 @@
             <div class="bg-white rounded-2xl card-shadow p-8 mb-8">
                 <h3 class="text-xl font-bold text-gray-800 mb-4">整体结论 / Summary</h3>
                 <div id="summary" class="text-gray-600 text-lg leading-relaxed"></div>
+            </div>
+
+            <!-- Charts -->
+            <div class="bg-white rounded-2xl card-shadow p-8 mb-8">
+                <h3 class="text-xl font-bold text-gray-800 mb-6">校验结果图表 / Result Charts</h3>
+                <div class="grid md:grid-cols-2 gap-8">
+                    <div>
+                        <h4 class="text-center text-gray-600 font-medium mb-4">数字一致性 / Digit Consistency</h4>
+                        <div class="relative" style="height:260px">
+                            <canvas id="digitChart"></canvas>
+                        </div>
+                    </div>
+                    <div>
+                        <h4 class="text-center text-gray-600 font-medium mb-4">翻译准确性 / Translation Accuracy</h4>
+                        <div class="relative" style="height:260px">
+                            <canvas id="translationChart"></canvas>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <!-- Detailed Results -->
@@ -514,8 +534,70 @@ Please return the result strictly in the following JSON format (do not include a
                 translationResults.innerHTML = '<div class="text-gray-500 text-center py-8">暂无翻译校验结果</div>';
             }
             
+            renderCharts(result);
+
             resultArea.classList.remove('hidden');
             resultArea.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // Chart instances for cleanup on re-render
+        let digitChartInstance = null;
+        let translationChartInstance = null;
+
+        function renderCharts(result) {
+            const digitConsistent = result.digitCheck?.consistent || 0;
+            const digitInconsistent = result.digitCheck?.inconsistent || 0;
+            const translationCorrect = result.translationCheck?.correct || 0;
+            const translationIncorrect = result.translationCheck?.incorrect || 0;
+
+            const chartDefaults = {
+                plugins: {
+                    legend: { position: 'bottom', labels: { font: { size: 13 } } }
+                },
+                maintainAspectRatio: false
+            };
+
+            // Digit chart
+            if (digitChartInstance) digitChartInstance.destroy();
+            const digitCtx = document.getElementById('digitChart').getContext('2d');
+            if (digitConsistent === 0 && digitInconsistent === 0) {
+                digitCtx.canvas.parentElement.innerHTML = '<p class="text-gray-400 text-center pt-20">暂无数据 / No data</p>';
+            } else {
+                digitChartInstance = new Chart(digitCtx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['一致 / Consistent', '差异 / Inconsistent'],
+                        datasets: [{
+                            data: [digitConsistent, digitInconsistent],
+                            backgroundColor: ['#38ef7d', '#eb3349'],
+                            borderColor: ['#11998e', '#c0392b'],
+                            borderWidth: 1
+                        }]
+                    },
+                    options: chartDefaults
+                });
+            }
+
+            // Translation chart
+            if (translationChartInstance) translationChartInstance.destroy();
+            const transCtx = document.getElementById('translationChart').getContext('2d');
+            if (translationCorrect === 0 && translationIncorrect === 0) {
+                transCtx.canvas.parentElement.innerHTML = '<p class="text-gray-400 text-center pt-20">暂无数据 / No data</p>';
+            } else {
+                translationChartInstance = new Chart(transCtx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['正确 / Correct', '需修正 / Needs Correction'],
+                        datasets: [{
+                            data: [translationCorrect, translationIncorrect],
+                            backgroundColor: ['#667eea', '#f5576c'],
+                            borderColor: ['#5a6fd6', '#c0392b'],
+                            borderWidth: 1
+                        }]
+                    },
+                    options: chartDefaults
+                });
+            }
         }
     </script>
 </body>
